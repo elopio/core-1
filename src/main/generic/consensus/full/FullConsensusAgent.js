@@ -415,7 +415,8 @@ class FullConsensusAgent extends BaseConsensusAgent {
     async _onGetAccountsProof(msg) {
         const proof = await this._blockchain.getAccountsProof(msg.blockHash, msg.addresses);
         if (!proof) {
-            this._peer.channel.rejectAccounts();
+            this._peer.channel.reject(Message.Type.GET_ACCOUNTS_PROOF, RejectMessage.Code.REJECT_TOOOLD,
+                'Block unknown or too old', msg.blockHash.serialize());
         } else {
             this._peer.channel.accountsProof(msg.blockHash, proof);
         }
@@ -428,7 +429,8 @@ class FullConsensusAgent extends BaseConsensusAgent {
     async _onGetTransactionsProof(msg) {
         const proof = await this._blockchain.getTransactionsProof(msg.blockHash, msg.addresses);
         if (!proof) {
-            this._peer.channel.transactionsProof(msg.blockHash, [], await MerkleProof.compute([], []));
+            this._peer.channel.reject(Message.Type.GET_TRANSACTIONS_PROOF, RejectMessage.Code.REJECT_UNKNOWN,
+                'Block unknown or on fork', msg.blockHash.serialize());
         } else {
             this._peer.channel.transactionsProof(msg.blockHash, proof);
         }
@@ -441,7 +443,8 @@ class FullConsensusAgent extends BaseConsensusAgent {
     async _onGetAccountsTreeChunk(msg) {
         const chunk = await this._blockchain.getAccountsTreeChunk(msg.blockHash, msg.startPrefix);
         if (!chunk) {
-            this._peer.channel.rejectAccounts();
+            this._peer.channel.reject(Message.Type.GET_ACCOUNTS_PROOF, RejectMessage.Code.REJECT_TOOOLD,
+                'Block unknown or too old', msg.blockHash.serialize());
         } else {
             this._peer.channel.accountsTreeChunk(msg.blockHash, chunk);
         }

@@ -34,7 +34,7 @@ class LightConsensusAgent extends FullConsensusAgent {
         // Listen to consensus messages from the peer.
         peer.channel.on('chain-proof', msg => this._onChainProof(msg));
         peer.channel.on('accounts-tree-chunk', msg => this._onAccountsTreeChunk(msg));
-        peer.channel.on('accounts-rejected', msg => this._onAccountsRejected(msg));
+        peer.channel.on('reject', msg => this._onReject(msg));
     }
 
     /**
@@ -345,16 +345,21 @@ class LightConsensusAgent extends FullConsensusAgent {
     }
 
     /**
-     * @param {AccountsRejectedMessage} msg
+     * @param {RejectMessage} msg
      * @returns {Promise.<void>}
      * @private
      */
-    async _onAccountsRejected(msg) {
-        Log.d(LightConsensusAgent, `[ACCOUNTS-REJECTED] Received from ${this._peer.peerAddress}`);
+    async _onReject(msg) {
+        // Ignore reject messages not relevant to us.
+        if (msg.messageType !== Message.Type.GET_ACCOUNTS_TREE_CHUNK) {
+            return;
+        }
+
+        Log.d(LightConsensusAgent, `[REJECT] Received from ${this._peer.peerAddress}`);
 
         // Check if we have requested an accounts proof, reject unsolicited ones.
         if (!this._accountsRequest) {
-            Log.w(LightConsensusAgent, `Unsolicited accounts rejected received from ${this._peer.peerAddress}`);
+            Log.w(LightConsensusAgent, `Unsolicited reject for GetAccountsTreeChunkMessage received from ${this._peer.peerAddress}`);
             // TODO close/ban?
             return;
         }

@@ -33,8 +33,8 @@ class NanoConsensusAgent extends BaseConsensusAgent {
         // Listen to consensus messages from the peer.
         peer.channel.on('chain-proof', msg => this._onChainProof(msg));
         peer.channel.on('accounts-proof', msg => this._onAccountsProof(msg));
-        peer.channel.on('accounts-rejected', msg => this._onAccountsRejected(msg));
         peer.channel.on('transactions-proof', msg => this._onTransactionsProof(msg));
+        peer.channel.on('reject', msg => this._onReject(msg));
 
         peer.channel.on('get-chain-proof', msg => this._onGetChainProof(msg));
 
@@ -348,16 +348,21 @@ class NanoConsensusAgent extends BaseConsensusAgent {
     }
 
     /**
-     * @param {AccountsRejectedMessage} msg
+     * @param {RejectMessage} msg
      * @returns {void}
      * @private
      */
-    _onAccountsRejected(msg) {
-        Log.d(NanoConsensusAgent, `[ACCOUNTS-REJECTED] Received from ${this._peer.peerAddress}`);
+    _onReject(msg) {
+        // Ignore reject messages not relevant to us.
+        if (msg.messageType !== Message.Type.GET_ACCOUNTS_PROOF) {
+            return;
+        }
+
+        Log.d(NanoConsensusAgent, `[REJECT] Received from ${this._peer.peerAddress}`);
 
         // Check if we have requested an accounts proof, reject unsolicited ones.
         if (!this._accountsRequest) {
-            Log.w(NanoConsensusAgent, `Unsolicited accounts rejected received from ${this._peer.peerAddress}`);
+            Log.w(NanoConsensusAgent, `Unsolicited reject for GetAccountsProofMessage received from ${this._peer.peerAddress}`);
             // TODO close/ban?
             return;
         }
